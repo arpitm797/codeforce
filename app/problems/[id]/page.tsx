@@ -1,3 +1,7 @@
+import Link from "next/link";
+import { prisma } from "@/lib/prisma";
+import CodeEditor from "@/components/CodeEditor";
+
 type ProblemPageProps = {
   params: Promise<{
     id: string;
@@ -9,58 +13,66 @@ export default async function ProblemPage({
 }: ProblemPageProps) {
   const { id } = await params;
 
+  const problem = await prisma.problem.findUnique({
+    where: {
+      id: Number(id),
+    },
+  });
+
+  if (!problem) {
+    return (
+      <main className="mx-auto max-w-4xl px-6 py-10">
+        <h1 className="text-2xl font-bold">Problem not found</h1>
+
+        <Link
+          href="/problems"
+          className="mt-4 inline-block text-blue-600 hover:underline"
+        >
+          ← Back to problems
+        </Link>
+      </main>
+    );
+  }
+
   return (
     <main className="mx-auto max-w-6xl px-6 py-10">
-      <div className="grid grid-cols-2 gap-8">
-        
-        {/* Problem statement */}
-        <div>
+      <Link
+        href="/problems"
+        className="text-sm text-gray-600 hover:underline"
+      >
+        ← Back to problems
+      </Link>
+
+      <div className="mt-6">
+        <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold">
-            Two Sum
+            {problem.id}. {problem.title}
           </h1>
 
-          <p className="mt-4 text-gray-700">
-            Given an array of integers nums and an integer target,
-            return indices of the two numbers such that they add up
-            to target.
+          <span className="rounded bg-gray-100 px-3 py-1 text-sm">
+            {problem.difficulty}
+          </span>
+        </div>
+
+        <div className="mt-8">
+          <h2 className="text-xl font-semibold">
+            Problem Description
+          </h2>
+
+          <p className="mt-3 leading-7 text-gray-700">
+            {problem.description}
           </p>
-
-          <h2 className="mt-8 text-xl font-semibold">
-            Example
-          </h2>
-
-          <div className="mt-4 rounded-lg bg-gray-100 p-4">
-            <p>
-              <strong>Input:</strong> nums = [2,7,11,15], target = 9
-            </p>
-
-            <p className="mt-2">
-              <strong>Output:</strong> [0,1]
-            </p>
-          </div>
-
-          <h2 className="mt-8 text-xl font-semibold">
-            Constraints
-          </h2>
-
-          <ul className="mt-4 list-disc space-y-2 pl-6 text-gray-700">
-            <li>2 ≤ nums.length ≤ 10⁴</li>
-            <li>-10⁹ ≤ nums[i] ≤ 10⁹</li>
-            <li>-10⁹ ≤ target ≤ 10⁹</li>
-          </ul>
         </div>
 
-        {/* Code editor placeholder */}
-        <div className="rounded-lg border">
-          <div className="border-b p-4 font-medium">
-            Code Editor
-          </div>
+        <div className="mt-10">
+          <h2 className="text-xl font-semibold">
+            Your Solution
+          </h2>
 
-          <div className="h-96 bg-gray-950 p-4 font-mono text-sm text-white">
-            Write your code here...
+          <div className="mt-4 overflow-hidden rounded-lg border">
+            <CodeEditor />
           </div>
         </div>
-
       </div>
     </main>
   );
