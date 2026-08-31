@@ -4,6 +4,7 @@ import { z } from "zod";
 const runCodeSchema = z.object({
   language: z.enum(["javascript", "python", "cpp"]),
   code: z.string().min(1, "Code cannot be empty"),
+  input: z.string(),
 });
 
 const languageIds = {
@@ -29,7 +30,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { language, code } = result.data;
+    const { language, code, input } = result.data;
 
     const languageId = languageIds[language];
 
@@ -43,6 +44,7 @@ export async function POST(request: Request) {
         body: JSON.stringify({
           source_code: code,
           language_id: languageId,
+          stdin: input,
         }),
       }
     );

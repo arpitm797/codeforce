@@ -13,4 +13,27 @@ model Problem {
   description String
   difficulty  String
   createdAt   DateTime @default(now())
+
+  testCases   TestCase[]
+  submissions Submission[]
+}
+
+model TestCase {
+  id             Int    @id @default(autoincrement())
+  input          String
+  expectedOutput String
+  problemId      Int
+
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+}
+
+model Submission {
+  id        Int      @id @default(autoincrement())
+  problemId Int
+  language  String
+  code      String
+  status    String
+  createdAt DateTime @default(now())
+
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
 }

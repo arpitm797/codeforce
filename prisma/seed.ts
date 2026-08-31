@@ -17,42 +17,34 @@ const prisma = new PrismaClient({
 });
 
 async function main() {
-  await prisma.problem.createMany({
-    data: [
-      {
-        title: "Two Sum",
-        description:
-          "Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.",
-        difficulty: "Easy",
-      },
-      {
-        title: "Binary Search",
-        description:
-          "Given a sorted array of integers, find the position of a target value using binary search.",
-        difficulty: "Easy",
-      },
-      {
-        title: "Longest Substring",
-        description:
-          "Given a string, find the length of the longest substring without repeating characters.",
-        difficulty: "Medium",
-      },
-      {
-        title: "Number of Islands",
-        description:
-          "Given a grid of land and water, count the number of islands.",
-        difficulty: "Medium",
-      },
-      {
-        title: "Merge K Sorted Lists",
-        description:
-          "Merge k sorted linked lists into one sorted linked list.",
-        difficulty: "Hard",
-      },
-    ],
-  });
+  // Remove existing test cases
+  await prisma.testCase.deleteMany();
 
-  console.log("Problems seeded successfully!");
+  // Find existing problems
+  const problems = await prisma.problem.findMany();
+
+  const twoSum = problems.find(
+    (problem) => problem.title === "Two Sum"
+  );
+
+  if (twoSum) {
+    await prisma.testCase.createMany({
+      data: [
+        {
+          input: "2 7",
+          expectedOutput: "9",
+          problemId: twoSum.id,
+        },
+        {
+          input: "10 20",
+          expectedOutput: "30",
+          problemId: twoSum.id,
+        },
+      ],
+    });
+  }
+
+  console.log("Test cases seeded successfully!");
 }
 
 main()
@@ -63,4 +55,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
-  

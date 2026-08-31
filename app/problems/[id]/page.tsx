@@ -70,7 +70,7 @@ export default async function ProblemPage({
           </h2>
 
           <div className="mt-4 overflow-hidden rounded-lg border">
-            <CodeEditor />
+            <CodeEditor problemId={problem.id} />
           </div>
         </div>
       </div>
