@@ -8,10 +8,68 @@ type RunResult = {
 
 export function runJavaScript(
   code: string,
+  functionName: string,
   input: string,
-  timeoutMs = 3000
+  timeoutMs = 10000
 ): Promise<RunResult> {
   return new Promise((resolve) => {
+    let testInput: unknown;
+
+    try {
+      testInput = JSON.parse(input);
+    } catch {
+      resolve({
+        stdout: "",
+        stderr: "Invalid test case input",
+        timedOut: false,
+      });
+      return;
+    }
+
+    let argumentsCode: string;
+
+    if (
+      typeof testInput === "object" &&
+      testInput !== null &&
+      !Array.isArray(testInput)
+    ) {
+      argumentsCode = Object.values(
+        testInput as Record<string, unknown>
+      )
+        .map((value) => JSON.stringify(value))
+        .join(",");
+    } else {
+      argumentsCode = JSON.stringify(testInput);
+    }
+
+    const runner = `
+${code}
+
+(async () => {
+  try {
+    if (typeof ${functionName} !== "function") {
+      throw new Error(
+        "Function '${functionName}' was not found."
+      );
+    }
+
+    const result = await ${functionName}(${argumentsCode});
+
+    process.stdout.write(
+      JSON.stringify(result)
+    );
+  } catch (error) {
+    process.stderr.write(
+      error instanceof Error
+        ? error.stack || error.message
+        : String(error)
+    );
+
+    process.exit(1);
+  }
+})();
+`;
+
     const child = spawn(
       "docker",
       [
@@ -24,7 +82,7 @@ export function runJavaScript(
 
         "--cpus",
         "0.5",
-        
+
         "--network",
         "none",
 
@@ -32,10 +90,11 @@ export function runJavaScript(
         "64",
 
         "node:22-alpine",
+
         "node",
         "-e",
-        code,
-        ],
+        runner,
+      ],
       {
         stdio: ["pipe", "pipe", "pipe"],
       }
@@ -55,7 +114,8 @@ export function runJavaScript(
 
     const timer = setTimeout(() => {
       timedOut = true;
-      child.kill();
+
+      child.kill("SIGKILL");
     }, timeoutMs);
 
     child.on("close", () => {
@@ -68,7 +128,6 @@ export function runJavaScript(
       });
     });
 
-    child.stdin.write(input);
     child.stdin.end();
   });
 }

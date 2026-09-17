@@ -1,3 +1,4 @@
+
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 
@@ -20,27 +21,25 @@ export default async function ProblemsPage() {
 
       <div className="mt-8 overflow-hidden rounded-lg border">
         {problems.map((problem) => (
-          <div
+          <Link
             key={problem.id}
-            className="flex items-center justify-between border-b p-5 last:border-b-0"
+            href={`/problems/${problem.id}`}
+            className="group flex items-center justify-between border-b p-5 last:border-b-0 transition-all duration-200 hover:bg-black hover:text-white"
           >
             <div>
-              <Link
-                href={`/problems/${problem.id}`}
-                className="font-medium hover:underline"
-              >
+              <div className="font-medium transition-colors duration-200 group-hover:text-white">
                 {problem.id}. {problem.title}
-              </Link>
+              </div>
 
-              <p className="mt-1 text-sm text-gray-500">
+              <p className="mt-1 text-sm text-gray-500 transition-colors duration-200 group-hover:text-gray-300">
                 {problem.description}
               </p>
             </div>
 
-            <span className="rounded bg-gray-100 px-3 py-1 text-sm text-gray-600">
+            <span className="rounded bg-gray-100 px-3 py-1 text-sm text-gray-600 transition-all duration-200 group-hover:bg-white group-hover:text-black">
               {problem.difficulty}
             </span>
-          </div>
+          </Link>
         ))}
 
         {problems.length === 0 && (

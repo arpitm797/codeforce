@@ -44,55 +44,115 @@ export async function POST(request: Request) {
       );
     }
 
+    if (!problem.functionName) {
+      return NextResponse.json(
+        {
+          error: "Function name is not configured for this problem",
+        },
+        { status: 500 }
+      );
+    }
+
     const results = [];
 
     for (const testCase of problem.testCases) {
       const result = await runJavaScript(
         code,
+        problem.functionName,
         testCase.input
       );
 
-          const actual = result.stdout.trim();
-          const expected = testCase.output.trim();
+      const actual = result.stdout.trim();
+      const expected = testCase.output.trim();
 
-          let status: "PASSED" | "WRONG_ANSWER" | "RUNTIME_ERROR" | "TIME_LIMIT";
+      let passed = false;
 
-          if (result.timedOut) {
-            status = "TIME_LIMIT";
-          } else if (result.stderr) {
-            status = "RUNTIME_ERROR";
-          } else if (actual === expected) {
-            status = "PASSED";
-          } else {
-            status = "WRONG_ANSWER";
-          }
+      try {
+        const actualJson = JSON.parse(actual);
+        const expectedJson = JSON.parse(expected);
 
-          results.push({
-            testCaseId: testCase.id,
-            input: testCase.input,
-            expected,
-            actual,
-            status,
-            passed: status === "PASSED",
-            error: result.stderr || null,
-            timedOut: result.timedOut,
-          });
-          if (status === "RUNTIME_ERROR" || status === "TIME_LIMIT") {
-              break;
-            }
+        passed =
+          JSON.stringify(actualJson) ===
+          JSON.stringify(expectedJson);
+      } catch {
+        passed = actual === expected;
+      }
+
+      let status:
+        | "ACCEPTED"
+        | "WRONG_ANSWER"
+        | "RUNTIME_ERROR"
+        | "TIME_LIMIT";
+
+      if (result.timedOut) {
+        status = "TIME_LIMIT";
+      } else if (result.stderr) {
+        status = "RUNTIME_ERROR";
+      } else if (passed) {
+        status = "ACCEPTED";
+      } else {
+        status = "WRONG_ANSWER";
+      }
+
+      results.push({
+        testCaseId: testCase.id,
+        input: testCase.input,
+        expected,
+        actual,
+        status,
+        passed,
+        error: result.stderr || null,
+        timedOut: result.timedOut,
+      });
     }
-     console.log("JUDGE RESULTS:", results);
-    const allPassed = results.every(
-      (result) => result.passed
-    );
+
+    const allPassed =
+      results.length > 0 &&
+      results.every((result) => result.passed);
+
+    let finalStatus:
+      | "ACCEPTED"
+      | "WRONG_ANSWER"
+      | "RUNTIME_ERROR"
+      | "TIME_LIMIT";
+
+    if (allPassed) {
+      finalStatus = "ACCEPTED";
+    } else if (
+      results.some(
+        (result) => result.status === "TIME_LIMIT"
+      )
+    ) {
+      finalStatus = "TIME_LIMIT";
+    } else if (
+      results.some(
+        (result) => result.status === "RUNTIME_ERROR"
+      )
+    ) {
+      finalStatus = "RUNTIME_ERROR";
+    } else {
+      finalStatus = "WRONG_ANSWER";
+    }
+
+    await prisma.submission.create({
+      data: {
+        code,
+        language,
+        status: finalStatus,
+        problemId: Number(problemId),
+      },
+    });
 
     return NextResponse.json({
       success: true,
       problem: problem.title,
       passed: allPassed,
+      status: finalStatus,
       results,
     });
-  } catch {
+  } catch (error) {
+    console.error("Execution error:", error);
+
     return NextResponse.json(
       {
         error: "Execution failed",

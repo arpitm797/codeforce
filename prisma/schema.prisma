@@ -8,23 +8,25 @@ datasource db {
 }
 
 model Problem {
-  id          Int          @id @default(autoincrement())
-  title       String
-  description String
-  difficulty  String
-  createdAt   DateTime     @default(now())
+  id           Int               @id @default(autoincrement())
+  title        String            @unique
+  description  String
+  difficulty   String
+  functionName String            @default("twoSum")
+  createdAt    DateTime          @default(now())
 
-  testCases   TestCase[]
-  submissions Submission[]
+  testCases    TestCase[]
+  submissions  Submission[]
+  contests     ContestProblem[]
 }
 
 model TestCase {
-  id        Int     @id @default(autoincrement())
+  id        Int    @id @default(autoincrement())
   input     String
   output    String
   problemId Int
 
-  problem   Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
 }
 
 model Submission {
@@ -35,5 +37,27 @@ model Submission {
   problemId Int
   createdAt DateTime @default(now())
 
-  problem   Problem  @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+}
+
+model Contest {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  startTime   DateTime
+  endTime     DateTime
+  createdAt   DateTime @default(now())
+
+  problems ContestProblem[]
+}
+
+model ContestProblem {
+  id        Int @id @default(autoincrement())
+  contestId Int
+  problemId Int
+
+  contest Contest @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@unique([contestId, problemId])
 }
